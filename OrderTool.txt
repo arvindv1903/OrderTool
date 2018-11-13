@@ -1,0 +1,109 @@
+'Code changes are to be Done here for the OrderTool
+
+
+Dim sysUser As String
+    sysUser = CreateObject("WScript.Network").UserName
+
+    Set OutApp = CreateObject("Outlook.Application")
+    Set OutMail = OutApp.CreateItem(0)
+
+    Dim rhtml As String
+    Dim rhtml1, rhtml2 As String
+    
+    Dim ForM As Integer
+    ForM = 0
+    
+    Dim wbk As Workbook
+    Set wbk = Workbooks.Open("C:\Users\" & sysUser & "\Desktop\Base.xlsx")
+    
+    Dim rowCount, totalDefectCount, defectCount As Integer
+    rowCount = wbk.Sheets("Dump").Range("A65536").End(-4162).Row
+    
+    rhtml = "<html> <body> Hi All," & "<br>" & " " & "<br>" & "Please find defect and test execution updates for " & Mrversion & " " & TestingPhase & " " & "<br>" & "" & "<br>" & " " & "</body> </html>"
+    
+    Dim i, j As Integer
+    For i = 2 To rowCount
+      If ((wbk.Sheets("Dump").Cells(i, 17).Value = "Fixed") Or (wbk.Sheets("Dump").Cells(i, 17).Value = "Migrated")) Then
+      ForM = ForM + 1
+      End If
+    Next
+    
+    totalDefectCount = (rowCount - 1)
+    defectCount = totalDefectCount - ForM
+    
+    Dim detected, closed, reopened, fixed As Integer
+    detected = 0
+    closed = 0
+    reopened = 0
+    fixed = 0
+    
+    rowCount1 = Sheets("Defect Data").Range("B65536").End(-4162).Row
+    
+    If Weekday(Now()) <> vbMonday Then
+    
+    For j = 2 To rowCount1
+        If ((LCase(Sheets("Defect Data").Cells(j, 3).Value) = "closed") And (Sheets("Defect Data").Cells(j, 4).Value) = (Date - 1)) Then
+        closed = closed + 1
+        End If
+    If (Sheets("Defect Data").Cells(j, 2).Value = (Date - 1)) Then
+    If ((LCase(Sheets("Defect Data").Cells(j, 3).Value) = "new") Or (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "reopen") Or (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "open") Or (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "retest blocked")) Then
+     detected = detected + 1
+    End If
+        If (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "reopen") Then
+        reopened = reopened + 1
+        ElseIf (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "fixed") Then
+        fixed = fixed + 1
+        End If
+    End If
+    Next
+    
+    rhtml1 = "<html> <body> Total # of open defects (including Fixed and Migrated): " & totalDefectCount & "<br>" _
+              + "# of defects to be fixed (excluding Fixed and Migrated): " & defectCount & "<br>" _
+              + "# of defects in Fixed/Migrated: " & ForM & "<br>" _
+              + "# of defects detected on " & (Format((Date - 1), "dd-mmm")) & ": " & detected & "<br>" _
+              + "# of defects closed on " & (Format((Date - 1), "dd-mmm")) & ": " & closed & "<br>" _
+              + "# of defects reopened on " & (Format((Date - 1), "dd-mmm")) & ": " & reopened & "<br>" _
+              + "# of defects fixed on " & (Format((Date - 1), "dd-mmm")) & ": " & fixed & "<br>" & " " & "<br> </body> </html>"
+    
+    Else
+    
+    For j = 2 To rowCount1
+    If ((LCase(Sheets("Defect Data").Cells(j, 3).Value) = "closed") And (Sheets("Defect Data").Cells(j, 4).Value) = (Date - 3)) Then
+        closed = closed + 1
+        End If
+    If (Sheets("Defect Data").Cells(j, 2).Value = (Date - 3)) Then
+      If ((LCase(Sheets("Defect Data").Cells(j, 3).Value) = "new") Or (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "reopen") Or (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "open") Or (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "retest blocked")) Then
+        detected = detected + 1
+      End If
+        If (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "reopen") Then
+        reopened = reopened + 1
+        ElseIf (LCase(Sheets("Defect Data").Cells(j, 3).Value) = "fixed") Then
+        fixed = fixed + 1
+        End If
+    End If
+    Next
+    
+    rhtml1 = "<html> <body> Total # of open defects (including Fixed and Migrated): " & totalDefectCount & "<br>" _
+              + "# of defects to be fixed (excluding Fixed and Migrated): " & defectCount & "<br>" _
+              + "# of defects in Fixed/Migrated: " & ForM & "<br>" _
+              + "# of defects detected on " & (Format((Date - 3), "dd-mmm")) & ": " & detected & "<br>" _
+              + "# of defects closed on " & (Format((Date - 3), "dd-mmm")) & ": " & closed & "<br>" _
+              + "# of defects reopened on " & (Format((Date - 3), "dd-mmm")) & ": " & reopened & "<br>" _
+              + "# of defects fixed on " & (Format((Date - 3), "dd-mmm")) & ": " & fixed & "<br>" & " " & "<br> </body> </html>"
+    
+    End If
+    
+    
+   ' <p> <b><u>Note:</u></b> <br>" _
+    '          + "-   In the Defect Age group by component, if a defect is tagged to >1 component, it is counted for all components.<br>" _
+
+    rhtml2 = "<html> <body> " _
+              + "<br><b><u>Resolution details to be updated for defects: </u></b>" _
+              + "<ol><li>For all defects, before the defect is migrated resolution details should be updated.</li>" _
+              + "<li>Resolution details should be updated using defect field named -> Root cause with sample data to replicate. </li>" _
+              + "<li>Template for updating resolution details is as below " _
+              + "<ul><li>Module - where this fix was done </li>" _
+              + "<li>Root cause for the defect </li>" _
+              + "<li>How can this be avoided next time </li>" _
+              + "<li>Could this have been caught in earlier phase? </li></ul> </li></ol></body> </html>"
+    
